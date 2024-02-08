@@ -1,6 +1,7 @@
 using EasyBlog.Data;
 using EasyBlog.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
 namespace EasyBlog.Controllers
@@ -16,9 +17,33 @@ namespace EasyBlog.Controllers
             _db = db;
         }
 
-        public IActionResult Index()
+        [Route("post/{id:int}")]
+        public IActionResult ShowPost(int id)
         {
-            return View(_db.Posts.OrderByDescending(x => x.Id).ToList());
+
+            var post = _db.Posts.Include(x => x.Category).FirstOrDefault(x => x.Id == id);
+
+            if (post == null)
+            {
+                return NotFound();
+            }
+
+            return View(post);
+        }
+
+
+        public IActionResult Index(int? cid)
+        {
+            IQueryable<Post> posts = _db.Posts;
+
+            if (cid != null)
+            {
+                posts = posts.Where(p => p.CategoryId == cid);
+
+                ViewBag.CategoryName = _db.Categories.Find(cid)?.Name;
+            }
+
+            return View(posts.OrderByDescending(x => x.Id).ToList());
         }
 
         public IActionResult Privacy()
